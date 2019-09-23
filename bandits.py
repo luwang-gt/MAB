@@ -14,7 +14,7 @@ class Bandit:
         # number of samples taken to compute p
         self.idx = np.zeros(self.k)
         # pointer for seeking the next batch start in each arm
-        self.p = p  # p for each arm, starting point of action_values
+        self.p = p  # prior p for each arm, starting point of action_values
         self.data = data
         self.done = False
 
@@ -43,4 +43,5 @@ class Bandit:
         return rewards
 
     def compute_rewards(self, data):
-        return data['success'].mean()
+        rewards = data['success'].mean()
+        return rewards
