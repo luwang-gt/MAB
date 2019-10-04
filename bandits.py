@@ -3,15 +3,13 @@ import numpy as np
 
 class Bandit:
     """
-    Multi-armed bandits
+    Multi-armed bandits class
     """
 
-    def __init__(self, k, data, batch_size=1000, p=None):
+    def __init__(self, k, data, p=None):
         self.k = k  # number of arms
         self.action_values = np.zeros(self.k)  # p for each arm
-        self.optimal = 0  # best arm
-        self.batch_size = batch_size
-        # number of samples taken to compute p
+        self.optimal = np.random.choice(range(self.k))  # best arm
         self.idx = np.zeros(self.k)
         # pointer for seeking the next batch start in each arm
         self.p = p  # prior p for each arm, starting point of action_values
@@ -29,13 +27,11 @@ class Bandit:
 
     def pull(self, action):
         df = self.data[action]
-        #import pdb; pdb.set_trace()
         start_idx = self.idx[action]
-        end_idx = start_idx + self.batch_size + 1
 
-        if end_idx <= df.shape[0]:
-            rewards = self.compute_rewards(df.loc[start_idx:end_idx, :])
-            self.idx[action] = end_idx
+        if start_idx < df.shape[0]:
+            rewards = self.compute_rewards(df.loc[start_idx:start_idx, :])
+            self.idx[action] = start_idx + 1
         else:
             rewards = 0
             self.done = True
@@ -43,5 +39,45 @@ class Bandit:
         return rewards
 
     def compute_rewards(self, data):
-        rewards = data['success'].mean()
+        rewards = data.success.iloc[0]
+        return rewards
+
+
+class ContextualBandits:
+    """
+    Contextual bandits class
+    """
+
+    def __init__(self, num_actions, num_states, data, state_col, p=None):
+        self.state = 0  # current state
+        self.num_actions = num_actions  # number of actions, i.e. arms
+        self.num_states = num_states  # number of states
+        self.data = data
+        self.state_col = state_col
+        self.idx = np.zeros([self.num_states, self.num_actions])
+        self.done = False
+        self.p = p  # prior probability for states
+
+    def getBandit(self):
+        if not self.p:
+            self.state = np.random.randint(0, self.num_states)
+        else:
+            self.state = np.random.choice(range(self.num_states), p=self.p)
+        return self.state
+
+    def pull(self, state, action):
+        df = self.data[state][action]
+        start_idx = self.idx[state][action]
+
+        if start_idx < df.shape[0]:
+            rewards = self.compute_rewards(df.loc[start_idx:start_idx, :])
+            self.idx[state][action] = start_idx + 1
+        else:
+            rewards = 0
+            self.done = True
+
+        return rewards
+
+    def compute_rewards(self, data):
+        rewards = data.success.iloc[0]
         return rewards
